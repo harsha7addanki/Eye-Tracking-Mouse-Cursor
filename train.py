@@ -263,7 +263,7 @@ def create_model(input_shape=(128, 128, 3)):
     x_path = Dense(128)(x_path)
     x_path = BatchNormalization()(x_path)
     x_path = LeakyReLU(negative_slope=0.1)(x_path)
-    x_path = Dropout(0.2)(x_path)
+    x_path = Dense(64)(x_path)
     x_coord = Dense(1, name='x_coord')(x_path)
     
     # Y coordinate path
@@ -274,7 +274,7 @@ def create_model(input_shape=(128, 128, 3)):
     y_path = Dense(128)(y_path)
     y_path = BatchNormalization()(y_path)
     y_path = LeakyReLU(negative_slope=0.1)(y_path)
-    y_path = Dropout(0.2)(y_path)
+    y_path = Dense(64)(y_path)
     y_coord = Dense(1, name='y_coord')(y_path)
     
     return Model(inputs=image_input, outputs=[x_coord, y_coord])

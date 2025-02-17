@@ -140,10 +140,11 @@ model = load_model('best_model.keras')
 # Initialize the main window
 root = tk.Tk()
 root.title("Eye Tracking Mouse Cursor")
+root.state('zoomed')
 
 # Create a canvas
-canvas = Canvas(root, width=640, height=480)
-canvas.pack()
+canvas = Canvas(root, width=600, height=600)
+canvas.pack(expand=True, fill='both')
 
 # Initialize the video capture
 cap = cv2.VideoCapture(0)
