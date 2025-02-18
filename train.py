@@ -304,14 +304,14 @@ model.compile(
 callbacks = [
     EarlyStopping(
         monitor='val_loss',
-        patience=15,
+        patience=30,
         restore_best_weights=True,
         verbose=1
     ),
     ReduceLROnPlateau(
         monitor='val_loss',
         factor=0.5,
-        patience=5,
+        patience=30,
         min_lr=1e-6,
         verbose=1
     ),
