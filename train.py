@@ -282,17 +282,21 @@ def create_model(input_shape=(128, 128, 3)):
 # Create and compile model
 model = create_model()
 
-# Simpler optimizer configuration
+# Modified optimizer configuration
 optimizer = tf.keras.optimizers.AdamW(
-    learning_rate=0.001,
-    weight_decay=0.0001
+    learning_rate=1e-4,  # Lower initial learning rate
+    weight_decay=1e-5    # Reduce weight decay
 )
 
 model.compile(
     optimizer=optimizer,
     loss={
-        'x_coord': 'huber',
-        'y_coord': 'huber'
+        'x_coord': 'mse',  # Changed from huber to MSE
+        'y_coord': 'mse'
+    },
+    loss_weights={
+        'x_coord': 1.0,
+        'y_coord': 1.0
     },
     metrics={
         'x_coord': ['mae', 'mse'],
@@ -300,18 +304,18 @@ model.compile(
     }
 )
 
-# Callbacks with modified learning rate handling
+# Modified callbacks for more aggressive learning rate adjustment
 callbacks = [
     EarlyStopping(
         monitor='val_loss',
-        patience=30,
+        patience=15,      # Reduced patience
         restore_best_weights=True,
         verbose=1
     ),
     ReduceLROnPlateau(
         monitor='val_loss',
-        factor=0.5,
-        patience=30,
+        factor=0.2,      # More aggressive reduction
+        patience=10,      # Reduced patience
         min_lr=1e-6,
         verbose=1
     ),
@@ -323,14 +327,14 @@ callbacks = [
     )
 ]
 
-# Train the model
+# Modified training parameters
 history = model.fit(
     train_dataset,
     validation_data=val_dataset,
-    epochs=200,
+    epochs=200, 
     callbacks=callbacks,
-    verbose=1
+    verbose=1,
+    shuffle=True        # Ensure shuffling
 )
-
 # Save the final model
 model.save('final_model.keras')
