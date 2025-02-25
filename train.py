@@ -308,7 +308,7 @@ model.compile(
 callbacks = [
     EarlyStopping(
         monitor='val_loss',
-        patience=15,      # Reduced patience
+        patience=150, # Reduced patience
         restore_best_weights=True,
         verbose=1
     ),
