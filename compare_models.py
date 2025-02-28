@@ -155,14 +155,26 @@ model1 = load_model('best_model.keras')
 model2 = load_model('best_model2.keras')
 
 # Load labels to get actual coordinates
-labels_df = pd.read_csv('./labels.csv')
+labels_df = pd.read_csv('./test_labels.csv')
 
 # Load and test multiple random images
-data_dir = 'data'
-# Get list of all jpg files in data directory
-image_files = [f for f in os.listdir(data_dir) if f.endswith('.jpg')]
-# Randomly select 10 images
-selected_images = np.random.choice(image_files, size=10, replace=False)
+data_dir = 'test'
+# Get list of all jpg files that have corresponding labels
+available_images = []
+for f in os.listdir(data_dir):
+    if f.endswith('.jpg'):
+        image_id = f.split('.')[0]
+        if len(labels_df[labels_df['image'] == image_id]) > 0:
+            available_images.append(f)
+
+if len(available_images) < 10:
+    num_images = len(available_images)
+    print(f"\nWarning: Only {num_images} labeled images available. Will test all of them.")
+else:
+    num_images = 10
+
+# Randomly select images from available ones
+selected_images = np.random.choice(available_images, size=min(10, len(available_images)), replace=False)
 
 # Lists to store errors for averaging for both models
 model1_x_errors = []
@@ -173,11 +185,11 @@ model2_y_errors = []
 model2_euclidean_errors = []
 
 # Create a figure for all images
-plt.figure(figsize=(20, 40))
+plt.figure(figsize=(20, 8 * ((num_images + 1) // 2)))
 
 for idx, image_name in enumerate(selected_images):
     test_image = os.path.join(data_dir, image_name)
-    print(f"\nTesting image {idx + 1}/10: {image_name}")
+    print(f"\nTesting image {idx + 1}/{num_images}: {image_name}")
 
     # Get actual coordinates from labels
     actual_coords = labels_df[labels_df['image'] == image_name.split('.')[0]].iloc[0]

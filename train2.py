@@ -229,7 +229,12 @@ def create_model(input_shape=(128, 128, 3)):
     # Global features
     x = GlobalAveragePooling2D()(x)
     
-    # Shared dense layers
+    # Enhanced dense layers with gradual size reduction
+    x = Dense(1024)(x)
+    x = BatchNormalization()(x)
+    x = LeakyReLU(negative_slope=0.1)(x)
+    x = Dropout(0.4)(x)
+    
     x = Dense(512)(x)
     x = BatchNormalization()(x)
     x = LeakyReLU(negative_slope=0.1)(x)
@@ -253,11 +258,16 @@ def create_model(input_shape=(128, 128, 3)):
     # Add the branches (now they have compatible shapes)
     x = Add()([branch1, branch2])
     
-    # Single path for coordinate prediction
+    # Enhanced dense layers for coordinate prediction
+    x = Dense(512)(x)
+    x = BatchNormalization()(x)
+    x = LeakyReLU(negative_slope=0.1)(x)
+    x = Dropout(0.3)(x)
+    
     x = Dense(256)(x)
     x = BatchNormalization()(x)
     x = LeakyReLU(negative_slope=0.1)(x)
-    x = Dropout(0.2)(x)
+    x = Dropout(0.25)(x)
     
     x = Dense(128)(x)
     x = BatchNormalization()(x)
@@ -265,6 +275,11 @@ def create_model(input_shape=(128, 128, 3)):
     x = Dropout(0.2)(x)
     
     x = Dense(64)(x)
+    x = BatchNormalization()(x)
+    x = LeakyReLU(negative_slope=0.1)(x)
+    x = Dropout(0.1)(x)
+    
+    x = Dense(32)(x)
     x = BatchNormalization()(x)
     x = LeakyReLU(negative_slope=0.1)(x)
     
@@ -276,10 +291,10 @@ def create_model(input_shape=(128, 128, 3)):
 # Create and compile model
 model = create_model()
 
-# Modified optimizer configuration
+# Modified optimizer configuration with lower learning rate
 optimizer = tf.keras.optimizers.AdamW(
-    learning_rate=1e-4,  # Lower initial learning rate
-    weight_decay=1e-5    # Reduce weight decay
+    learning_rate=5e-5,  # Lower initial learning rate for deeper network
+    weight_decay=1e-5    # Keep same weight decay
 )
 
 model.compile(
@@ -288,18 +303,18 @@ model.compile(
     metrics=['mae', 'mse']
 )
 
-# Modified callbacks for more aggressive learning rate adjustment
+# Modified callbacks for more patient training
 callbacks = [
     EarlyStopping(
         monitor='val_loss',
-        patience=150,
+        patience=200,  # Increased patience for deeper network
         restore_best_weights=True,
         verbose=1
     ),
     ReduceLROnPlateau(
         monitor='val_loss',
         factor=0.2,
-        patience=10,
+        patience=15,  # Increased patience for learning rate reduction
         min_lr=1e-6,
         verbose=1
     ),
@@ -315,7 +330,7 @@ callbacks = [
 history = model.fit(
     train_dataset,
     validation_data=val_dataset,
-    epochs=200,
+    epochs=300,  # Increased epochs for deeper network
     callbacks=callbacks,
     verbose=1,
     shuffle=True

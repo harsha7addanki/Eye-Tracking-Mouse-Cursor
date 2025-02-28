@@ -21,7 +21,7 @@ def capture_image():
     ret, frame = cap.read()
     if ret:
         image_uuid = str(uuid.uuid4())
-        image_path = f"data/{image_uuid}.jpg"
+        image_path = f"test/{image_uuid}.jpg"
         cv2.imwrite(image_path, frame)
         cap.release()
         return image_uuid, image_path
@@ -30,7 +30,7 @@ def capture_image():
 
 # Function to save dot location and image uuid to CSV
 def save_to_csv(image_uuid, dot_x, dot_y):
-    with open('labels.csv', mode='a', newline='') as file:
+    with open('test_labels.csv', mode='a', newline='') as file:
         writer = csv.writer(file)
         writer.writerow([image_uuid, dot_x, dot_y])
 
