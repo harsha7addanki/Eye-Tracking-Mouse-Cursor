@@ -185,7 +185,59 @@ model2_y_errors = []
 model2_euclidean_errors = []
 
 # Create a figure for all images
-plt.figure(figsize=(20, 8 * ((num_images + 1) // 2)))
+fig = plt.figure(figsize=(20, 8 * ((num_images + 1) // 2)))
+
+# Lists to store scatter points, annotations, and backgrounds for each subplot
+all_scatter_points = []
+all_annotations = []
+all_backgrounds = []
+last_annotation = None
+last_visible = False
+
+def hover_annotation(event):
+    global last_annotation, last_visible
+    
+    if event.inaxes is None:
+        if last_visible:
+            last_annotation.set_visible(False)
+            last_visible = False
+            fig.canvas.draw_idle()
+        return
+    
+    # Find which subplot the mouse is in
+    subplot_idx = event.inaxes.get_subplotspec().num1
+    if subplot_idx >= len(all_scatter_points):
+        return
+        
+    scatter_points = all_scatter_points[subplot_idx]
+    annotation = all_annotations[subplot_idx]
+    
+    # Reset last annotation if we moved to a different subplot
+    if last_annotation is not None and last_annotation != annotation and last_visible:
+        last_annotation.set_visible(False)
+        last_visible = False
+    
+    last_annotation = annotation
+    
+    for scatter in scatter_points:
+        cont, ind = scatter.contains(event)
+        if cont:
+            point = scatter.get_offsets()[ind["ind"][0]]
+            model_name = scatter.get_label()
+            
+            # Only update if point changed
+            if not last_visible or annotation.xy[0] != point[0] or annotation.xy[1] != point[1]:
+                annotation.xy = point
+                annotation.set_text(f"{model_name}\nx={point[0]:.3f}\ny={point[1]:.3f}")
+                annotation.set_visible(True)
+                last_visible = True
+                fig.canvas.draw_idle()
+            return
+    
+    if last_visible:
+        annotation.set_visible(False)
+        last_visible = False
+        fig.canvas.draw_idle()
 
 for idx, image_name in enumerate(selected_images):
     test_image = os.path.join(data_dir, image_name)
@@ -234,38 +286,66 @@ for idx, image_name in enumerate(selected_images):
     print("Predicted coordinates: x=", x2, "y=", y2)
     print("Error: x=", x2_error, "y=", y2_error, "euclidean=", euclidean2_error)
 
-    # Plot in a 5x6 grid (10 sets of 3 plots)
-    # Original image with both predictions
+    # Original image plot
     plt.subplot(5, 6, idx*3 + 1)
     plt.imshow(processed_image)
     plt.plot(x1 * processed_image.shape[1], y1 * processed_image.shape[0], 'r+', markersize=20, label='Model 1')
     plt.plot(x2 * processed_image.shape[1], y2 * processed_image.shape[0], 'b+', markersize=20, label='Model 2')
     plt.plot(actual_x * processed_image.shape[1], actual_y * processed_image.shape[0], 'g+', markersize=20, label='Actual')
     plt.title(f'Image {idx + 1}')
-    if idx == 0:  # Only show legend for first plot to save space
+    if idx == 0:
         plt.legend()
+    all_scatter_points.append([])
+    all_annotations.append(None)
 
     # Model 1 coordinate visualization
-    plt.subplot(5, 6, idx*3 + 2)
-    plt.plot(x1, y1, 'ro', markersize=10, label='Model 1')
-    plt.plot(actual_x, actual_y, 'go', markersize=10, label='Actual')
+    ax1 = plt.subplot(5, 6, idx*3 + 2)
+    scatter_points = []
+    scatter_points.append(plt.scatter(x1, y1, c='red', s=100, label='Model 1'))
+    scatter_points.append(plt.scatter(actual_x, actual_y, c='green', s=100, label='Actual'))
     plt.xlim(0, 1)
     plt.ylim(0, 1)
     plt.grid(True)
     plt.title(f'Model 1 Coords')
     if idx == 0:
         plt.legend()
+    
+    annotation = ax1.annotate("",
+                            xy=(0, 0),
+                            xytext=(20, 20),
+                            textcoords="offset points",
+                            bbox=dict(boxstyle="round", fc="w", ec="0.5", alpha=0.9),
+                            arrowprops=dict(arrowstyle="->"))
+    annotation.set_visible(False)
+    
+    all_scatter_points.append(scatter_points)
+    all_annotations.append(annotation)
 
     # Model 2 coordinate visualization
-    plt.subplot(5, 6, idx*3 + 3)
-    plt.plot(x2, y2, 'bo', markersize=10, label='Model 2')
-    plt.plot(actual_x, actual_y, 'go', markersize=10, label='Actual')
+    ax2 = plt.subplot(5, 6, idx*3 + 3)
+    scatter_points = []
+    scatter_points.append(plt.scatter(x2, y2, c='blue', s=100, label='Model 2'))
+    scatter_points.append(plt.scatter(actual_x, actual_y, c='green', s=100, label='Actual'))
     plt.xlim(0, 1)
     plt.ylim(0, 1)
     plt.grid(True)
     plt.title(f'Model 2 Coords')
     if idx == 0:
         plt.legend()
+    
+    annotation = ax2.annotate("",
+                            xy=(0, 0),
+                            xytext=(20, 20),
+                            textcoords="offset points",
+                            bbox=dict(boxstyle="round", fc="w", ec="0.5", alpha=0.9),
+                            arrowprops=dict(arrowstyle="->"))
+    annotation.set_visible(False)
+    
+    all_scatter_points.append(scatter_points)
+    all_annotations.append(annotation)
+
+# Connect the hover event
+fig.canvas.mpl_connect("motion_notify_event", hover_annotation)
 
 # Calculate and print average errors for both models
 print("\nModel 1 Average Errors:")
@@ -288,5 +368,6 @@ print("X Error Improvement:", x_improvement, "%")
 print("Y Error Improvement:", y_improvement, "%")
 print("Euclidean Error Improvement:", euclidean_improvement, "%")
 
+# After all plotting is done
 plt.tight_layout()
 plt.show() 
